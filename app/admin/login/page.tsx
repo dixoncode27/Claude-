@@ -29,8 +29,8 @@ export default function AdminLoginPage() {
       return;
     }
 
-    router.push("/admin");
-    router.refresh();
+    // Hard redirect so server re-reads session cookies fresh
+    window.location.href = "/admin";
   }
 
   return (

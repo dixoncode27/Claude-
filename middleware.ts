@@ -4,11 +4,26 @@ import { NextResponse, type NextRequest } from "next/server";
 type CookieToSet = { name: string; value: string; options?: Record<string, unknown> };
 
 export async function middleware(request: NextRequest) {
+  // Skip auth entirely for the login page — no redirects from here
+  if (request.nextUrl.pathname === "/admin/login") {
+    return NextResponse.next({ request });
+  }
+
+  // Only protect /admin/* beyond login
+  if (!request.nextUrl.pathname.startsWith("/admin")) {
+    return NextResponse.next({ request });
+  }
+
+  // Guard: if env vars are missing, let the page load and fail gracefully
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll() {
@@ -28,33 +43,15 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Refresh session — do not remove this call
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const isAdminRoute = request.nextUrl.pathname.startsWith("/admin");
-  const isLoginPage = request.nextUrl.pathname === "/admin/login";
-
-  // Unauthenticated user trying to access protected admin route
-  if (isAdminRoute && !isLoginPage && !user) {
+  if (!user) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/admin/login";
+    // Copy supabase cookies so session state is preserved
     const redirectResponse = NextResponse.redirect(loginUrl);
-    // Forward cookies so session state is preserved across redirect
-    supabaseResponse.cookies.getAll().forEach((cookie) => {
-      redirectResponse.cookies.set(cookie.name, cookie.value);
-    });
-    return redirectResponse;
-  }
-
-  // Authenticated user visiting login — send to dashboard
-  if (isLoginPage && user) {
-    const dashboardUrl = request.nextUrl.clone();
-    dashboardUrl.pathname = "/admin";
-    const redirectResponse = NextResponse.redirect(dashboardUrl);
-    supabaseResponse.cookies.getAll().forEach((cookie) => {
-      redirectResponse.cookies.set(cookie.name, cookie.value);
+    supabaseResponse.cookies.getAll().forEach(({ name, value }) => {
+      redirectResponse.cookies.set(name, value);
     });
     return redirectResponse;
   }
