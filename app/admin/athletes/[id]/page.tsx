@@ -7,6 +7,7 @@ import { PATHWAY_LABELS, PATHWAY_DESCRIPTIONS } from "@/lib/routing/logic";
 import CoachNotes from "@/components/admin/CoachNotes";
 import AttendanceTracker from "@/components/admin/AttendanceTracker";
 import AthleteAdminActions from "@/components/admin/AthleteAdminActions";
+import InviteParentPanel from "@/components/admin/InviteParentPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -147,6 +148,9 @@ export default async function AthleteDetailPage({
 
           {/* Admin Actions */}
           <AthleteAdminActions athlete={athlete} coaches={coaches} />
+
+          {/* Invite Parent */}
+          <InviteParentPanel athleteId={athlete.id} />
         </div>
       </div>
     </div>

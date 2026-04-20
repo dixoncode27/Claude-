@@ -6,8 +6,12 @@ type CookieToSet = { name: string; value: string; options?: Record<string, unkno
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Skip auth for login pages
-  if (pathname === "/admin/login" || pathname === "/parent/login") {
+  // Skip auth for login pages and auth callback
+  if (
+    pathname === "/admin/login" ||
+    pathname === "/parent/login" ||
+    pathname.startsWith("/auth/")
+  ) {
     return NextResponse.next({ request });
   }
 
