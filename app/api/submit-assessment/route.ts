@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error("Supabase insert error:", error);
+      if (process.env.NODE_ENV === "development") console.error("Supabase insert error:", error);
       return NextResponse.json(
         { error: "Failed to save assessment" },
         { status: 500 }
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ leadId: data.id }, { status: 201 });
   } catch (err) {
-    console.error("Assessment submission error:", err);
+    if (process.env.NODE_ENV === "development") console.error("Assessment submission error:", err);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

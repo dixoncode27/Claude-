@@ -201,7 +201,7 @@ export default function AssessmentFlow() {
 
       router.push("/result");
     } catch (err) {
-      console.error(err);
+      if (process.env.NODE_ENV === "development") console.error(err);
       setErrors({ submit: "Something went wrong. Please try again." });
     } finally {
       setIsSubmitting(false);

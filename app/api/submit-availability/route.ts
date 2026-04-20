@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       .eq("id", leadId);
 
     if (error) {
-      console.error("Availability update error:", error);
+      if (process.env.NODE_ENV === "development") console.error("Availability update error:", error);
       return NextResponse.json(
         { error: "Failed to save availability" },
         { status: 500 }
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err) {
-    console.error("Availability submission error:", err);
+    if (process.env.NODE_ENV === "development") console.error("Availability submission error:", err);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
