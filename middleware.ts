@@ -4,13 +4,16 @@ import { NextResponse, type NextRequest } from "next/server";
 type CookieToSet = { name: string; value: string; options?: Record<string, unknown> };
 
 export async function middleware(request: NextRequest) {
-  // Skip auth entirely for the login page — no redirects from here
-  if (request.nextUrl.pathname === "/admin/login") {
+  const { pathname } = request.nextUrl;
+
+  // Skip auth for login pages
+  if (pathname === "/admin/login" || pathname === "/parent/login") {
     return NextResponse.next({ request });
   }
 
-  // Only protect /admin/* beyond login
-  if (!request.nextUrl.pathname.startsWith("/admin")) {
+  // Only protect /admin/* and /parent/*
+  const isProtected = pathname.startsWith("/admin") || pathname.startsWith("/parent");
+  if (!isProtected) {
     return NextResponse.next({ request });
   }
 
@@ -47,8 +50,7 @@ export async function middleware(request: NextRequest) {
 
   if (!user) {
     const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/admin/login";
-    // Copy supabase cookies so session state is preserved
+    loginUrl.pathname = pathname.startsWith("/parent") ? "/parent/login" : "/admin/login";
     const redirectResponse = NextResponse.redirect(loginUrl);
     supabaseResponse.cookies.getAll().forEach(({ name, value }) => {
       redirectResponse.cookies.set(name, value);
@@ -60,5 +62,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/parent/:path*"],
 };

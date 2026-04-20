@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import type { Lead, Pathway } from "@/types";
+import type { Athlete, Coach, Pathway } from "@/types";
 import { formatDate, calculateAge } from "@/lib/utils";
 import { PATHWAY_LABELS } from "@/lib/routing/logic";
 
@@ -9,32 +9,44 @@ export const dynamic = "force-dynamic";
 export default async function AthletesPage() {
   const supabase = await createClient();
 
-  // Athletes = leads that have been enrolled or converted
   const { data } = await supabase
-    .from("leads")
-    .select("*")
-    .in("status", ["enrolled", "scheduled"])
+    .from("athletes")
+    .select("*, coach:coaches(first_name, last_name)")
     .order("created_at", { ascending: false });
 
-  const athletes = (data ?? []) as Lead[];
+  const athletes = (data ?? []) as (Athlete & { coach: Pick<Coach, "first_name" | "last_name"> | null })[];
+
+  const active = athletes.filter((a) => a.status === "active").length;
+  const byPathway = (p: Pathway) => athletes.filter((a) => a.pathway === p).length;
 
   return (
     <div className="p-8">
-      <div className="mb-8">
-        <h1 className="tbwr-heading-md text-tbwr-white mb-1">Athletes</h1>
-        <p className="text-gray-500 text-sm">
-          {athletes.length} enrolled or scheduled athletes
-        </p>
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="tbwr-heading-md text-tbwr-white mb-1">Athletes</h1>
+          <p className="text-gray-500 text-sm">{athletes.length} total · {active} active</p>
+        </div>
+      </div>
+
+      {/* Stats strip */}
+      <div className="grid grid-cols-3 gap-4 mb-8">
+        {([
+          ["little-champs", "Little Champs"],
+          ["world-team", "World Team"],
+          ["future-olympians", "Future Olympians"],
+        ] as [Pathway, string][]).map(([p, label]) => (
+          <div key={p} className="border border-[#2a2a2a] bg-[#0a0a0a] p-4 text-center">
+            <div className="text-2xl font-black text-tbwr-gold mb-1">{byPathway(p)}</div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">{label}</div>
+          </div>
+        ))}
       </div>
 
       {athletes.length === 0 ? (
         <div className="border border-[#2a2a2a] bg-[#0a0a0a] py-20 text-center">
-          <p className="text-gray-600 text-sm mb-4">No athletes enrolled yet</p>
-          <Link
-            href="/admin/leads"
-            className="text-xs font-bold uppercase tracking-widest text-tbwr-gold hover:underline"
-          >
-            View All Leads →
+          <p className="text-gray-600 text-sm mb-4">No athletes yet</p>
+          <Link href="/admin/leads" className="text-xs font-bold uppercase tracking-widest text-tbwr-gold hover:underline">
+            Convert a Lead to Athlete →
           </Link>
         </div>
       ) : (
@@ -42,19 +54,26 @@ export default async function AthletesPage() {
           {athletes.map((athlete) => (
             <Link
               key={athlete.id}
-              href={`/admin/leads/${athlete.id}`}
+              href={`/admin/athletes/${athlete.id}`}
               className="border border-[#2a2a2a] bg-[#0a0a0a] p-6 hover:border-tbwr-gold transition-colors group block"
             >
               <div className="flex items-start justify-between gap-4 mb-4">
                 <div>
                   <h3 className="font-black text-tbwr-white text-base group-hover:text-tbwr-gold transition-colors">
-                    {athlete.athlete_first_name} {athlete.athlete_last_name}
+                    {athlete.first_name} {athlete.last_name}
                   </h3>
                   <p className="text-gray-500 text-xs">
-                    {calculateAge(athlete.athlete_dob)} years old · {athlete.athlete_gender}
+                    {calculateAge(athlete.date_of_birth)} yrs · {athlete.gender}
+                    {athlete.weight_class && ` · ${athlete.weight_class}`}
                   </p>
                 </div>
-                <span className="flex-shrink-0 text-[10px] font-black uppercase tracking-widest bg-tbwr-gold text-tbwr-black px-2 py-1">
+                <span className={`flex-shrink-0 text-[10px] font-black uppercase tracking-widest px-2 py-1 ${
+                  athlete.status === "active"
+                    ? "bg-green-900 text-green-300"
+                    : athlete.status === "on-hold"
+                    ? "bg-yellow-900 text-yellow-300"
+                    : "bg-gray-800 text-gray-500"
+                }`}>
                   {athlete.status}
                 </span>
               </div>
@@ -68,30 +87,21 @@ export default async function AthletesPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-gray-600">Coach</span>
-                  <span className="text-xs text-gray-300">
-                    {athlete.assigned_coach || "Unassigned"}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-600">Parent</span>
                   <span className="text-xs text-gray-400">
-                    {athlete.parent_first_name} {athlete.parent_last_name}
+                    {athlete.coach
+                      ? `${athlete.coach.first_name} ${athlete.coach.last_name}`
+                      : "Unassigned"}
                   </span>
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-[#1a1a1a] flex items-center justify-between">
-                <span className="text-[10px] text-gray-600">
-                  Joined {formatDate(athlete.created_at)}
-                </span>
-                {/* Phase 2: Show last session date, progression stage */}
+              <div className="pt-4 border-t border-[#1a1a1a]">
+                <span className="text-[10px] text-gray-600">Since {formatDate(athlete.created_at)}</span>
               </div>
             </Link>
           ))}
         </div>
       )}
-
-      {/* Phase 2: Add full athlete profile pages with coach notes, attendance, progression */}
     </div>
   );
 }

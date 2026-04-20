@@ -5,6 +5,7 @@ import type { Lead, LeadStatus, RouteResult, Pathway } from "@/types";
 import { formatDateTime, calculateAge, STATUS_LABELS, STATUS_COLORS } from "@/lib/utils";
 import { ROUTE_LABELS, PATHWAY_LABELS, PATHWAY_DESCRIPTIONS, ROUTE_DESCRIPTIONS } from "@/lib/routing/logic";
 import LeadDetailClient from "@/components/admin/LeadDetailClient";
+import ConvertToAthleteButton from "@/components/admin/ConvertToAthleteButton";
 
 export const dynamic = "force-dynamic";
 
@@ -162,6 +163,16 @@ export default async function LeadDetailPage({
             <DataRow label="Gender" value={lead.athlete_gender} />
           </DetailCard>
 
+          {lead.status === "enrolled" || lead.status === "scheduled" ? (
+            <div className="border border-[#2a2a2a] bg-[#0a0a0a]">
+              <div className="px-6 py-4 border-b border-[#2a2a2a]">
+                <span className="text-xs font-bold uppercase tracking-widest text-tbwr-gold">Athlete Profile</span>
+              </div>
+              <div className="px-6 py-5">
+                <ConvertToAthleteButton lead={lead} />
+              </div>
+            </div>
+          ) : null}
           <LeadDetailClient lead={lead} />
         </div>
       </div>

@@ -9,6 +9,8 @@ const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", exact: true },
   { href: "/admin/leads", label: "Leads" },
   { href: "/admin/athletes", label: "Athletes" },
+  { href: "/admin/coaches", label: "Coaches" },
+  { href: "/admin/sessions", label: "Sessions" },
 ];
 
 export default function AdminNav() {
@@ -18,8 +20,7 @@ export default function AdminNav() {
   async function handleSignOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.push("/admin/login");
-    router.refresh();
+    window.location.href = "/admin/login";
   }
 
   return (
@@ -29,12 +30,8 @@ export default function AdminNav() {
           <span className="text-tbwr-black font-black text-xs">TW</span>
         </div>
         <div>
-          <div className="font-black text-xs uppercase tracking-widest text-tbwr-white">
-            TBWR
-          </div>
-          <div className="text-[10px] font-bold uppercase tracking-widest text-gray-600">
-            Admin
-          </div>
+          <div className="font-black text-xs uppercase tracking-widest text-tbwr-white">TBWR</div>
+          <div className="text-[10px] font-bold uppercase tracking-widest text-gray-600">Admin</div>
         </div>
       </div>
 
@@ -43,7 +40,6 @@ export default function AdminNav() {
           const isActive = item.exact
             ? pathname === item.href
             : pathname.startsWith(item.href);
-
           return (
             <Link
               key={item.href}

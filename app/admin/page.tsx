@@ -7,24 +7,28 @@ import { ROUTE_LABELS, PATHWAY_LABELS } from "@/lib/routing/logic";
 export const dynamic = "force-dynamic";
 
 async function getDashboardData(supabase: Awaited<ReturnType<typeof createClient>>) {
-  const [leadsResult, recentResult] = await Promise.all([
+  const [leadsResult, recentResult, athletesResult, coachesResult] = await Promise.all([
     supabase.from("leads").select("id, status, route_result, pathway, created_at"),
     supabase
       .from("leads")
       .select("id, parent_first_name, parent_last_name, athlete_first_name, athlete_last_name, route_result, pathway, status, created_at")
       .order("created_at", { ascending: false })
       .limit(8),
+    supabase.from("athletes").select("id, status", { count: "exact" }),
+    supabase.from("coaches").select("id", { count: "exact" }).eq("is_active", true),
   ]);
 
   return {
     all: leadsResult.data as Pick<Lead, "id" | "status" | "route_result" | "pathway" | "created_at">[] | null,
     recent: recentResult.data as Partial<Lead>[] | null,
+    athleteCount: athletesResult.count ?? 0,
+    coachCount: coachesResult.count ?? 0,
   };
 }
 
 export default async function AdminDashboard() {
   const supabase = await createClient();
-  const { all, recent } = await getDashboardData(supabase);
+  const { all, recent, athleteCount, coachCount } = await getDashboardData(supabase);
 
   const total = all?.length ?? 0;
   const byStatus = (status: LeadStatus) => all?.filter((l) => l.status === status).length ?? 0;
@@ -33,8 +37,8 @@ export default async function AdminDashboard() {
 
   const stats = [
     { label: "Total Leads", value: total },
-    { label: "New", value: byStatus("new") },
-    { label: "Contacted", value: byStatus("contacted") },
+    { label: "Active Athletes", value: athleteCount },
+    { label: "Active Coaches", value: coachCount },
     { label: "Enrolled", value: byStatus("enrolled") },
   ];
 
