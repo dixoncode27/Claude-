@@ -25,6 +25,7 @@ create table if not exists coaches (
   is_active  boolean default true
 );
 
+drop trigger if exists coaches_updated_at on coaches;
 create trigger coaches_updated_at
   before update on coaches
   for each row execute procedure update_updated_at_column();
@@ -61,6 +62,7 @@ create table if not exists athletes (
   )
 );
 
+drop trigger if exists athletes_updated_at on athletes;
 create trigger athletes_updated_at
   before update on athletes
   for each row execute procedure update_updated_at_column();
@@ -84,6 +86,7 @@ create table if not exists parent_profiles (
   phone      text default ''
 );
 
+drop trigger if exists parent_profiles_updated_at on parent_profiles;
 create trigger parent_profiles_updated_at
   before update on parent_profiles
   for each row execute procedure update_updated_at_column();
@@ -159,6 +162,7 @@ create table if not exists coach_notes (
   )
 );
 
+drop trigger if exists coach_notes_updated_at on coach_notes;
 create trigger coach_notes_updated_at
   before update on coach_notes
   for each row execute procedure update_updated_at_column();

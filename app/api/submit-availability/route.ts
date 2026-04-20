@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
-
-// ─── Phase 2: Trigger scheduling notification here ───────────────────────────
-// import { notifyCoach } from "@/lib/email/resend";
+import { autoInviteParentFromLead } from "@/lib/parent-invite";
 
 interface AvailabilityPayload {
   leadId: string;
@@ -43,8 +41,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ── Phase 2: Notify coach of new lead with availability ───────────────────
-    // await notifyCoach({ leadId, days, preferredTime });
+    // Auto-invite parent — fire and forget, don't block response
+    autoInviteParentFromLead(leadId).catch(() => {});
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err) {

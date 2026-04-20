@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { ensureParentProfile } from "@/lib/parent-invite";
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,57 +19,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "athleteId and parentEmail required" }, { status: 400 });
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+    const parentProfileId = await ensureParentProfile({
+      email: parentEmail,
+      firstName: parentFirstName ?? "",
+      lastName: parentLastName ?? "",
+      phone: parentPhone,
+    });
 
-    // Check if parent_profile already exists for this email
-    const { data: existingProfile } = await adminSupabase
-      .from("parent_profiles")
-      .select("id, user_id")
-      .eq("email", parentEmail.toLowerCase().trim())
-      .maybeSingle();
-
-    let parentProfileId: string;
-
-    if (existingProfile) {
-      // Parent already has an account — just link them to this athlete
-      parentProfileId = existingProfile.id;
-    } else {
-      // Invite the parent via Supabase Auth — sends email with set-password link
-      const { data: inviteData, error: inviteError } =
-        await adminSupabase.auth.admin.inviteUserByEmail(parentEmail.toLowerCase().trim(), {
-          redirectTo: `${appUrl}/auth/callback?next=/parent`,
-          data: {
-            role: "parent",
-            first_name: parentFirstName,
-            last_name: parentLastName,
-          },
-        });
-
-      if (inviteError) {
-        return NextResponse.json({ error: inviteError.message }, { status: 500 });
-      }
-
-      const userId = inviteData.user.id;
-
-      // Create parent profile record
-      const { data: profile, error: profileError } = await adminSupabase
-        .from("parent_profiles")
-        .insert({
-          user_id: userId,
-          first_name: parentFirstName?.trim() ?? "",
-          last_name: parentLastName?.trim() ?? "",
-          email: parentEmail.toLowerCase().trim(),
-          phone: parentPhone?.trim() ?? "",
-        })
-        .select("id")
-        .single();
-
-      if (profileError) {
-        return NextResponse.json({ error: profileError.message }, { status: 500 });
-      }
-
-      parentProfileId = profile.id;
+    if (!parentProfileId) {
+      return NextResponse.json({ error: "Failed to invite parent" }, { status: 500 });
     }
+
+    // Check if this was an existing profile (for message differentiation)
+    const { data: existingCheck } = await adminSupabase
+      .from("parent_profiles")
+      .select("created_at")
+      .eq("id", parentProfileId)
+      .single();
+
+    const wasExisting = existingCheck
+      ? new Date(existingCheck.created_at).getTime() < Date.now() - 5000
+      : false;
 
     // Link parent to athlete (upsert — safe to run multiple times)
     const { error: linkError } = await adminSupabase
@@ -81,7 +52,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: existingProfile
+      message: wasExisting
         ? "Parent linked to athlete successfully"
         : "Invitation sent — parent will receive an email to set their password",
     });

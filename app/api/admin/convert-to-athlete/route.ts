@@ -54,6 +54,21 @@ export async function POST(request: NextRequest) {
       })
       .eq("id", leadId);
 
+    // Auto-link parent profile if one was created during assessment invite
+    if (lead.parent_email) {
+      const { data: parentProfile } = await adminClient
+        .from("parent_profiles")
+        .select("id")
+        .eq("email", lead.parent_email.toLowerCase().trim())
+        .maybeSingle();
+
+      if (parentProfile) {
+        await adminClient
+          .from("parent_athletes")
+          .upsert({ parent_id: parentProfile.id, athlete_id: athlete.id });
+      }
+    }
+
     return NextResponse.json({ athleteId: athlete.id }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
