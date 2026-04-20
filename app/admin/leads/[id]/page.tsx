@@ -11,13 +11,14 @@ export const dynamic = "force-dynamic";
 export default async function LeadDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("leads")
     .select("*")
-    .eq("id", params.id)
+    .eq("id", id)
     .single();
 
   if (error || !data) {
@@ -73,10 +74,9 @@ export default async function LeadDetailPage({
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Left column — lead details */}
+        {/* Left column */}
         <div className="lg:col-span-2 flex flex-col gap-6">
 
-          {/* Route & Pathway */}
           <DetailCard title="Assessment Result">
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="border border-[#333] p-4">
@@ -107,7 +107,6 @@ export default async function LeadDetailPage({
             </div>
           </DetailCard>
 
-          {/* Assessment Answers */}
           <DetailCard title="Assessment Answers">
             <div className="grid sm:grid-cols-2 gap-y-5 gap-x-8">
               {lead.assessment_answers && Object.entries(lead.assessment_answers).map(([key, value]) => (
@@ -123,7 +122,6 @@ export default async function LeadDetailPage({
             </div>
           </DetailCard>
 
-          {/* Availability */}
           <DetailCard title="Availability">
             {lead.preferred_days?.length > 0 ? (
               <>
@@ -148,9 +146,8 @@ export default async function LeadDetailPage({
           </DetailCard>
         </div>
 
-        {/* Right column — contact + admin */}
+        {/* Right column */}
         <div className="flex flex-col gap-6">
-          {/* Parent */}
           <DetailCard title="Parent">
             <DataRow label="Name" value={`${lead.parent_first_name} ${lead.parent_last_name}`} />
             <DataRow label="Email" value={lead.parent_email} />
@@ -158,7 +155,6 @@ export default async function LeadDetailPage({
             <DataRow label="City" value={lead.parent_city} />
           </DetailCard>
 
-          {/* Athlete */}
           <DetailCard title="Athlete">
             <DataRow label="Name" value={`${lead.athlete_first_name} ${lead.athlete_last_name}`} />
             <DataRow label="Date of Birth" value={lead.athlete_dob} />
@@ -166,7 +162,6 @@ export default async function LeadDetailPage({
             <DataRow label="Gender" value={lead.athlete_gender} />
           </DetailCard>
 
-          {/* Admin Actions — Client Component */}
           <LeadDetailClient lead={lead} />
         </div>
       </div>
@@ -174,13 +169,7 @@ export default async function LeadDetailPage({
   );
 }
 
-function DetailCard({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+function DetailCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="border border-[#2a2a2a] bg-[#0a0a0a]">
       <div className="px-6 py-4 border-b border-[#2a2a2a]">

@@ -16,8 +16,9 @@ interface SearchParams {
 export default async function LeadsPage({
   searchParams,
 }: {
-  searchParams: SearchParams;
+  searchParams: Promise<SearchParams>;
 }) {
+  const params = await searchParams;
   const supabase = await createClient();
 
   let query = supabase
@@ -25,11 +26,11 @@ export default async function LeadsPage({
     .select("*")
     .order("created_at", { ascending: false });
 
-  if (searchParams.status) query = query.eq("status", searchParams.status);
-  if (searchParams.route) query = query.eq("route_result", searchParams.route);
-  if (searchParams.pathway) query = query.eq("pathway", searchParams.pathway);
-  if (searchParams.search) {
-    const s = searchParams.search;
+  if (params.status) query = query.eq("status", params.status);
+  if (params.route) query = query.eq("route_result", params.route);
+  if (params.pathway) query = query.eq("pathway", params.pathway);
+  if (params.search) {
+    const s = params.search;
     query = query.or(
       `parent_email.ilike.%${s}%,parent_last_name.ilike.%${s}%,athlete_first_name.ilike.%${s}%,athlete_last_name.ilike.%${s}%`
     );
@@ -49,24 +50,24 @@ export default async function LeadsPage({
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-8">
-        <FilterLink label="All" href="/admin/leads" active={!searchParams.status && !searchParams.route && !searchParams.pathway} />
-        <FilterLink label="New" href="/admin/leads?status=new" active={searchParams.status === "new"} />
-        <FilterLink label="Contacted" href="/admin/leads?status=contacted" active={searchParams.status === "contacted"} />
-        <FilterLink label="Scheduled" href="/admin/leads?status=scheduled" active={searchParams.status === "scheduled"} />
-        <FilterLink label="Enrolled" href="/admin/leads?status=enrolled" active={searchParams.status === "enrolled"} />
-        <FilterLink label="Nurture" href="/admin/leads?status=nurture" active={searchParams.status === "nurture"} />
+        <FilterLink label="All" href="/admin/leads" active={!params.status && !params.route && !params.pathway} />
+        <FilterLink label="New" href="/admin/leads?status=new" active={params.status === "new"} />
+        <FilterLink label="Contacted" href="/admin/leads?status=contacted" active={params.status === "contacted"} />
+        <FilterLink label="Scheduled" href="/admin/leads?status=scheduled" active={params.status === "scheduled"} />
+        <FilterLink label="Enrolled" href="/admin/leads?status=enrolled" active={params.status === "enrolled"} />
+        <FilterLink label="Nurture" href="/admin/leads?status=nurture" active={params.status === "nurture"} />
 
         <div className="w-px bg-[#333] mx-1" />
 
-        <FilterLink label="Premium" href="/admin/leads?route=premium-entry" active={searchParams.route === "premium-entry"} gold />
-        <FilterLink label="Standard" href="/admin/leads?route=standard-entry" active={searchParams.route === "standard-entry"} />
-        <FilterLink label="Nurture Track" href="/admin/leads?route=not-ready" active={searchParams.route === "not-ready"} />
+        <FilterLink label="Premium" href="/admin/leads?route=premium-entry" active={params.route === "premium-entry"} gold />
+        <FilterLink label="Standard" href="/admin/leads?route=standard-entry" active={params.route === "standard-entry"} />
+        <FilterLink label="Nurture Track" href="/admin/leads?route=not-ready" active={params.route === "not-ready"} />
 
         <div className="w-px bg-[#333] mx-1" />
 
-        <FilterLink label="Little Champs" href="/admin/leads?pathway=little-champs" active={searchParams.pathway === "little-champs"} />
-        <FilterLink label="World Team" href="/admin/leads?pathway=world-team" active={searchParams.pathway === "world-team"} />
-        <FilterLink label="Future Olympians" href="/admin/leads?pathway=future-olympians" active={searchParams.pathway === "future-olympians"} />
+        <FilterLink label="Little Champs" href="/admin/leads?pathway=little-champs" active={params.pathway === "little-champs"} />
+        <FilterLink label="World Team" href="/admin/leads?pathway=world-team" active={params.pathway === "world-team"} />
+        <FilterLink label="Future Olympians" href="/admin/leads?pathway=future-olympians" active={params.pathway === "future-olympians"} />
       </div>
 
       {/* Table */}
