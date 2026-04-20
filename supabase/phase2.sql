@@ -4,11 +4,6 @@
 -- Run this AFTER phase1 schema (supabase/schema.sql)
 -- ─────────────────────────────────────────────────────────────────────────────
 
--- ─── Extend leads table ──────────────────────────────────────────────────────
--- Add athlete_id FK for convert-to-athlete workflow
-
-alter table leads add column if not exists athlete_id uuid references athletes(id) on delete set null;
-
 -- ─── Coaches ─────────────────────────────────────────────────────────────────
 
 create table if not exists coaches (
@@ -70,6 +65,11 @@ create trigger athletes_updated_at
 create index if not exists idx_athletes_pathway  on athletes(pathway);
 create index if not exists idx_athletes_coach_id on athletes(coach_id);
 create index if not exists idx_athletes_status   on athletes(status);
+
+-- ─── Extend leads table ──────────────────────────────────────────────────────
+-- Must come after athletes table is created
+
+alter table leads add column if not exists athlete_id uuid references athletes(id) on delete set null;
 
 -- ─── Parent Profiles ─────────────────────────────────────────────────────────
 -- Linked to Supabase auth.users via user_id
