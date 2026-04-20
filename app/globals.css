@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --tbwr-black: #000000;
+    --tbwr-gold: #CEAA45;
+    --tbwr-white: #FFFFFF;
+    --tbwr-charcoal: #333333;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: #000000;
+    color: #FFFFFF;
+    font-family: system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background-color: #CEAA45;
+    color: #000000;
+  }
+}
+
+@layer components {
+  .tbwr-section {
+    @apply px-4 md:px-8 py-16 md:py-24;
+  }
+
+  .tbwr-container {
+    @apply max-w-6xl mx-auto;
+  }
+
+  .tbwr-heading-xl {
+    @apply text-4xl md:text-6xl lg:text-7xl font-black uppercase tracking-tight leading-none;
+  }
+
+  .tbwr-heading-lg {
+    @apply text-3xl md:text-4xl lg:text-5xl font-black uppercase tracking-tight leading-none;
+  }
+
+  .tbwr-heading-md {
+    @apply text-2xl md:text-3xl font-black uppercase tracking-tight;
+  }
+
+  .tbwr-heading-sm {
+    @apply text-xl md:text-2xl font-black uppercase tracking-tight;
+  }
+
+  .tbwr-label {
+    @apply text-xs font-bold uppercase tracking-widest text-tbwr-gold;
+  }
+
+  .tbwr-divider {
+    @apply border-t border-tbwr-charcoal;
+  }
+
+  .gold-line {
+    @apply w-12 h-1 bg-tbwr-gold;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
