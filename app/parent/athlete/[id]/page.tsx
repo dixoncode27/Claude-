@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import type { Athlete, CoachNote, Attendance, Pathway } from "@/types";
+import type { Athlete, CoachNote, Attendance, Pathway, Skill, AthleteSkill, ProgressReport } from "@/types";
 import { formatDate, calculateAge } from "@/lib/utils";
 import { PATHWAY_LABELS, PATHWAY_DESCRIPTIONS } from "@/lib/routing/logic";
 
@@ -29,23 +29,19 @@ export default async function ParentAthletePage({
 
   const athlete = athleteData as Athlete & { coach: { first_name: string; last_name: string } | null };
 
-  const [notesRes, attendanceRes] = await Promise.all([
-    supabase
-      .from("coach_notes")
-      .select("*")
-      .eq("athlete_id", id)
-      .eq("is_visible_to_parent", true)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("attendance")
-      .select("*, session:sessions(session_date, session_type, duration_min)")
-      .eq("athlete_id", id)
-      .order("created_at", { ascending: false })
-      .limit(20),
+  const [notesRes, attendanceRes, skillsRes, athleteSkillsRes, reportsRes] = await Promise.all([
+    supabase.from("coach_notes").select("*").eq("athlete_id", id).eq("is_visible_to_parent", true).order("created_at", { ascending: false }),
+    supabase.from("attendance").select("*, session:sessions(session_date, session_type, duration_min)").eq("athlete_id", id).order("created_at", { ascending: false }).limit(20),
+    supabase.from("skills").select("*").order("category").order("sort_order"),
+    supabase.from("athlete_skills").select("*").eq("athlete_id", id),
+    supabase.from("progress_reports").select("*").eq("athlete_id", id).eq("is_shared_with_parent", true).order("created_at", { ascending: false }),
   ]);
 
   const notes = (notesRes.data ?? []) as CoachNote[];
   const attendance = (attendanceRes.data ?? []) as Attendance[];
+  const skills = (skillsRes.data ?? []) as Skill[];
+  const athleteSkills = (athleteSkillsRes.data ?? []) as AthleteSkill[];
+  const reports = (reportsRes.data ?? []) as ProgressReport[];
   const present = attendance.filter((a) => a.status === "present" || a.status === "late").length;
   const rate = attendance.length > 0 ? Math.round((present / attendance.length) * 100) : 0;
 
@@ -156,6 +152,50 @@ export default async function ParentAthletePage({
         </div>
       )}
 
+      {/* Skill Progression (read-only) */}
+      {skills.length > 0 && (
+        <ParentSkillView skills={skills} athleteSkills={athleteSkills} />
+      )}
+
+      {/* Progress Reports (shared only) */}
+      {reports.length > 0 && (
+        <div className="border border-[#2a2a2a] bg-[#0a0a0a] mb-6">
+          <div className="px-6 py-4 border-b border-[#2a2a2a]">
+            <span className="text-xs font-bold uppercase tracking-widest text-tbwr-gold">Progress Reports</span>
+          </div>
+          <div className="divide-y divide-[#1a1a1a]">
+            {reports.map((report) => (
+              <div key={report.id} className="px-6 py-5">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-black uppercase tracking-widest text-tbwr-white text-sm">{report.period_label}</span>
+                  <span className="text-[10px] text-gray-600">{formatDate(report.created_at)}</span>
+                </div>
+                {report.coach_name && (
+                  <div className="text-xs text-gray-600 mb-3">{report.coach_name}</div>
+                )}
+                <p className="text-gray-300 text-sm leading-relaxed mb-3">{report.summary}</p>
+                {(report.strengths || report.areas_to_improve) && (
+                  <div className="grid grid-cols-2 gap-4 mt-3">
+                    {report.strengths && (
+                      <div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-green-600 mb-1">Strengths</div>
+                        <p className="text-gray-400 text-xs leading-relaxed">{report.strengths}</p>
+                      </div>
+                    )}
+                    {report.areas_to_improve && (
+                      <div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-yellow-700 mb-1">Focus Areas</div>
+                        <p className="text-gray-400 text-xs leading-relaxed">{report.areas_to_improve}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Coach Notes (parent-visible only) */}
       <div className="border border-[#2a2a2a] bg-[#0a0a0a]">
         <div className="px-6 py-4 border-b border-[#2a2a2a]">
@@ -185,6 +225,73 @@ export default async function ParentAthletePage({
             ))}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+const DIFFICULTY_DOT: Record<string, string> = {
+  beginner: "bg-blue-500",
+  intermediate: "bg-yellow-500",
+  advanced: "bg-red-500",
+};
+
+function ParentSkillView({ skills, athleteSkills }: { skills: Skill[]; athleteSkills: AthleteSkill[] }) {
+  const skillMap = new Map(athleteSkills.map((as) => [as.skill_id, as.status]));
+  const categories = Array.from(new Set(skills.map((s) => s.category)));
+  const achieved = athleteSkills.filter((as) => as.status === "achieved").length;
+  const inProgress = athleteSkills.filter((as) => as.status === "in_progress").length;
+
+  return (
+    <div className="border border-[#2a2a2a] bg-[#0a0a0a] mb-6">
+      <div className="px-6 py-4 border-b border-[#2a2a2a] flex items-center justify-between">
+        <span className="text-xs font-bold uppercase tracking-widest text-tbwr-gold">Skill Progression</span>
+        <div className="flex items-center gap-4 text-xs text-gray-500">
+          <span><span className="text-green-400 font-bold">{achieved}</span> achieved</span>
+          <span><span className="text-tbwr-gold font-bold">{inProgress}</span> in progress</span>
+        </div>
+      </div>
+
+      <div className="h-1 bg-[#1a1a1a]">
+        <div
+          className="h-full bg-green-500 transition-all"
+          style={{ width: `${skills.length > 0 ? (achieved / skills.length) * 100 : 0}%` }}
+        />
+      </div>
+
+      <div className="px-6 py-5 flex flex-col gap-5">
+        {categories.map((category) => {
+          const catSkills = skills.filter((s) => s.category === category);
+          const catAchieved = catSkills.filter((s) => skillMap.get(s.id) === "achieved").length;
+          return (
+            <div key={category}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{category}</span>
+                <span className="text-[10px] text-gray-700">{catAchieved}/{catSkills.length}</span>
+              </div>
+              <div className="flex flex-col gap-1">
+                {catSkills.map((skill) => {
+                  const status = skillMap.get(skill.id) ?? "not_started";
+                  return (
+                    <div key={skill.id} className={`flex items-center justify-between px-4 py-2 border text-sm ${
+                      status === "achieved"    ? "border-green-800 bg-green-900/10 text-green-300" :
+                      status === "in_progress" ? "border-yellow-800 bg-[#0d0900] text-tbwr-gold"  :
+                                                 "border-[#1a1a1a] text-gray-600"
+                    }`}>
+                      <div className="flex items-center gap-3">
+                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${DIFFICULTY_DOT[skill.difficulty]}`} />
+                        {skill.name}
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-widest">
+                        {status === "achieved" ? "✓ Achieved" : status === "in_progress" ? "In Progress" : ""}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

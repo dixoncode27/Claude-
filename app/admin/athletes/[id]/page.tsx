@@ -1,13 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import type { Athlete, Coach, CoachNote, Attendance, Pathway } from "@/types";
+import type { Athlete, Coach, CoachNote, Attendance, Pathway, Skill, AthleteSkill, ProgressReport } from "@/types";
 import { formatDate, calculateAge } from "@/lib/utils";
 import { PATHWAY_LABELS, PATHWAY_DESCRIPTIONS } from "@/lib/routing/logic";
 import CoachNotes from "@/components/admin/CoachNotes";
 import AttendanceTracker from "@/components/admin/AttendanceTracker";
 import AthleteAdminActions from "@/components/admin/AthleteAdminActions";
 import InviteParentPanel from "@/components/admin/InviteParentPanel";
+import SkillProgressionPanel from "@/components/admin/SkillProgressionPanel";
+import ProgressReportPanel from "@/components/admin/ProgressReportPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -19,27 +21,16 @@ export default async function AthleteDetailPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [athleteRes, notesRes, attendanceRes, coachesRes] = await Promise.all([
-    supabase
-      .from("athletes")
-      .select("*, coach:coaches(*)")
-      .eq("id", id)
-      .single(),
-    supabase
-      .from("coach_notes")
-      .select("*")
-      .eq("athlete_id", id)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("attendance")
-      .select("*, session:sessions(*)")
-      .eq("athlete_id", id)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("coaches")
-      .select("id, first_name, last_name")
-      .eq("is_active", true),
-  ]);
+  const [athleteRes, notesRes, attendanceRes, coachesRes, skillsRes, athleteSkillsRes, reportsRes] =
+    await Promise.all([
+      supabase.from("athletes").select("*, coach:coaches(*)").eq("id", id).single(),
+      supabase.from("coach_notes").select("*").eq("athlete_id", id).order("created_at", { ascending: false }),
+      supabase.from("attendance").select("*, session:sessions(*)").eq("athlete_id", id).order("created_at", { ascending: false }),
+      supabase.from("coaches").select("id, first_name, last_name").eq("is_active", true),
+      supabase.from("skills").select("*").order("category").order("sort_order"),
+      supabase.from("athlete_skills").select("*").eq("athlete_id", id),
+      supabase.from("progress_reports").select("*").eq("athlete_id", id).order("created_at", { ascending: false }),
+    ]);
 
   if (athleteRes.error || !athleteRes.data) notFound();
 
@@ -47,6 +38,9 @@ export default async function AthleteDetailPage({
   const notes = (notesRes.data ?? []) as CoachNote[];
   const attendance = (attendanceRes.data ?? []) as Attendance[];
   const coaches = (coachesRes.data ?? []) as Pick<Coach, "id" | "first_name" | "last_name">[];
+  const skills = (skillsRes.data ?? []) as Skill[];
+  const athleteSkills = (athleteSkillsRes.data ?? []) as AthleteSkill[];
+  const reports = (reportsRes.data ?? []) as ProgressReport[];
 
   return (
     <div className="p-8">
@@ -96,8 +90,13 @@ export default async function AthleteDetailPage({
             <p className="text-gray-400 text-sm leading-relaxed">
               {PATHWAY_DESCRIPTIONS[athlete.pathway as Pathway]}
             </p>
-            {/* Phase 3: Add skill progression ladder here */}
           </div>
+
+          {/* Skill Progression */}
+          <SkillProgressionPanel athleteId={athlete.id} skills={skills} athleteSkills={athleteSkills} />
+
+          {/* Progress Reports */}
+          <ProgressReportPanel athleteId={athlete.id} initialReports={reports} />
 
           {/* Attendance */}
           <AttendanceTracker athleteId={athlete.id} records={attendance} />

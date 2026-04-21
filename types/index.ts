@@ -174,6 +174,45 @@ export interface CoachNote {
   is_visible_to_parent: boolean;
 }
 
+// ─── Phase 3 Types ────────────────────────────────────────────────────────────
+
+export type SkillDifficulty = "beginner" | "intermediate" | "advanced";
+export type SkillStatus = "not_started" | "in_progress" | "achieved";
+
+export interface Skill {
+  id: string;
+  category: string;
+  name: string;
+  description: string;
+  difficulty: SkillDifficulty;
+  sort_order: number;
+}
+
+export interface AthleteSkill {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  athlete_id: string;
+  skill_id: string;
+  status: SkillStatus;
+  coach_notes: string;
+  achieved_at: string | null;
+}
+
+export interface ProgressReport {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  athlete_id: string;
+  coach_id: string | null;
+  coach_name: string;
+  period_label: string;
+  summary: string;
+  strengths: string;
+  areas_to_improve: string;
+  is_shared_with_parent: boolean;
+}
+
 // ─── Admin ───────────────────────────────────────────────────────────────────
 
 export interface AdminUser {
