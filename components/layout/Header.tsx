@@ -13,12 +13,20 @@ export default function Header() {
           </span>
         </Link>
 
-        <Link
-          href="/assessment"
-          className="text-xs font-bold uppercase tracking-widest text-tbwr-black bg-tbwr-gold px-4 py-2 hover:bg-yellow-400 transition-colors"
-        >
-          Start Assessment
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/parent/login"
+            className="text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-tbwr-gold transition-colors"
+          >
+            Parent Portal
+          </Link>
+          <Link
+            href="/assessment"
+            className="text-xs font-bold uppercase tracking-widest text-tbwr-black bg-tbwr-gold px-4 py-2 hover:bg-yellow-400 transition-colors"
+          >
+            Start Assessment
+          </Link>
+        </div>
       </div>
     </header>
   );

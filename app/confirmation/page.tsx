@@ -61,13 +61,13 @@ export default function ConfirmationPage() {
               {[
                 {
                   step: "01",
-                  title: "Coach Review",
-                  body: "A TBWR coach will review your assessment and availability within 24 hours.",
+                  title: "Check Your Email",
+                  body: "A Parent Portal invitation has been sent to your email. Click the link to set your password and get immediate access.",
                 },
                 {
                   step: "02",
-                  title: "Confirmation Call or Message",
-                  body: "We will reach out to confirm your first session date and any questions you have.",
+                  title: "Coach Review",
+                  body: "A TBWR coach will review your assessment and availability within 24 hours.",
                 },
                 {
                   step: "03",
@@ -90,12 +90,20 @@ export default function ConfirmationPage() {
             </div>
           </div>
 
-          <Link
-            href="/"
-            className="text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-tbwr-gold transition-colors"
-          >
-            ← Return to Home
-          </Link>
+          <div className="flex items-center gap-6">
+            <Link
+              href="/"
+              className="text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-tbwr-gold transition-colors"
+            >
+              ← Return to Home
+            </Link>
+            <Link
+              href="/parent/login"
+              className="text-xs font-bold uppercase tracking-widest text-tbwr-gold hover:text-yellow-300 transition-colors"
+            >
+              Parent Portal →
+            </Link>
+          </div>
         </div>
       </div>
     </div>
